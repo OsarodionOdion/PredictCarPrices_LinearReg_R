@@ -93,7 +93,7 @@ skim(used_cars)
 
 **QUESTION** Is there any missing data, and if so, which columns? 
 
-> There is no missing data
+> There are no missing data
 
 It looks like all of the character variables are good candidates to be factors. Let's
 convert them all to factors. You can do this by either directly converting each
@@ -108,7 +108,7 @@ used_cars <- read.csv(file = "./data/car_sales_price.csv", stringsAsFactors = TR
 
 **QUESTION** Look at the factor variables. What challenges do you think the factor variables might pose when we try to use them in multiple linear regression models?
 
-> PUT ANSWER HERE
+> The factor variables have different levels which create many different categories for the data set
 
 ## Step 4 - Partition into training and test sets
 
