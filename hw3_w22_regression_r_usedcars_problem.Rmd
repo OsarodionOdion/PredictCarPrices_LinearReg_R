@@ -85,13 +85,15 @@ library(skimr)       # An automated EDA tool (you saw this in a previous assignm
 Use `str`, `summary`, and `skim` to get a sense of the data. You'll see there's a mix of categorical and numeric data. Our response variable, the thing we will be trying to predict is `Price`. 
 
 ```{r firstlook}
-
+str(used_cars)
+summary(used_cars)
+skim(used_cars)
 ```
 
 
 **QUESTION** Is there any missing data, and if so, which columns? 
 
-> PUT ANSWER HERE
+> There is no missing data
 
 It looks like all of the character variables are good candidates to be factors. Let's
 convert them all to factors. You can do this by either directly converting each
@@ -99,7 +101,7 @@ variable with `as.factor` or you could simply reload the csv file using the
 appropriate `stringsAsFactors` argument value.
 
 ```{r factors}
-
+used_cars <- read.csv(file = "./data/car_sales_price.csv", stringsAsFactors = TRUE)
 
 ```
 
