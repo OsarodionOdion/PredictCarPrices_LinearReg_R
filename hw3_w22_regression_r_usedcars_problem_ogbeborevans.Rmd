@@ -1,0 +1,504 @@
+---
+title: "HW3-Predictive regression modeling with R"
+author: "misken"
+date: "February 8, 2022"
+output:
+ html_document: 
+   smart: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Step 1 - Familiarize yourself with the data and the assignment
+
+This assignment will give you a chance to do a little bit of everything - data wrangling,
+EDA, and predictive regression modeling. In this assignment you'll build some predictive regression models
+with R on a dataset containing used car prices.
+
+The dataset contains a little over 800 used 2005 GM cars. All of these cars
+were "lightly used" and were less than a year old when put on the used
+car market.
+
+Most of the fields are self-explanatory. We'll be trying to predict `Price`
+using the other variables.
+
+* Price: suggested retail price of the used 2005 GM car in excellent condition. The condition of 
+a car can greatly affect price. All cars in this data set were less than one year old when priced and 
+considered to be in excellent condition. 
+* Mileage: number of miles the car has been driven
+* Make: manufacturer of the car such as Saturn, Pontiac, and Chevrolet
+* Model: specific models for each car manufacturer such as Ion, Vibe, Cavalier
+* Trim (of car): specific type of car model such as SE Sedan 4D, Quad Coupe 2D 
+* Type: body type such as sedan, coupe, etc. 
+* Cylinder: number of cylinders in the engine 
+* Liter: a more specific measure of engine size 
+* Doors: number of doors 
+* Cruise: indicator variable representing whether the car has cruise control (1 = cruise)
+* Sound: indicator variable representing whether the car has upgraded speakers (1 = upgraded)
+* Leather: indicator variable representing whether the car has leather seats (1 = leather
+
+As we did in HW2, you'll be creating an R Markdown document to
+do the analysis as well as to document the
+steps you did (and answer some questions I'll throw at you).
+
+You'll notice a few "Hacker Extra" tasks thrown in. These are for those of you
+who want to go a little above and beyond and attempt some more challenging
+tasks.
+
+## Step 2 - Create a new R Markdown document
+
+Save this file as a new R Markdown document and name it something that
+includes your last name in the filename. Save it into the
+same folder as this file.
+
+## Step 3 - Create project and load data
+
+Create an R Studio project in the current folder (the one containing this file). You'll notice that there is a folder named **data**.
+Inside of it you'll find the data file for this assignment:
+
+- **car_sales_price.csv**
+
+
+### Load the data
+
+```{r load_data}
+used_cars <- read.csv("./data/car_sales_price.csv")
+
+```
+
+The assignment will begin with me guiding you through some basic data snooping, cleaning, exploratory data analysis (EDA) and data recoding. Then we'll move on to regression modeling.
+
+```{r}
+library(dplyr)   # Group by analysis and other SQLish things.
+library(ggplot2) # Plotting, of course
+library(corrplot) # Correlation plots
+library(tidyr)   # Data reshaping
+library(stringr) # String manipulation
+library(caret)   # Many aspects of predictive modeling
+library(MLmetrics) # We will use its mae() function for comparing model predictions
+library(forcats)   # Useful for dealing with categorical data - this one will be useful. :)
+library(skimr)       # An automated EDA tool (you saw this in a previous assignment)
+```
+
+Use `str`, `summary`, and `skim` to get a sense of the data. You'll see there's a mix of categorical and numeric data. Our response variable, the thing we will be trying to predict is `Price`. 
+
+```{r firstlook}
+str(used_cars)
+summary(used_cars)
+skim(used_cars)
+```
+
+
+**QUESTION** Is there any missing data, and if so, which columns? 
+
+> There are no missing data
+
+It looks like all of the character variables are good candidates to be factors. Let's
+convert them all to factors. You can do this by either directly converting each
+variable with `as.factor` or you could simply reload the csv file using the
+appropriate `stringsAsFactors` argument value.
+
+```{r factors}
+used_cars <- read.csv(file = "./data/car_sales_price.csv", stringsAsFactors = TRUE)
+
+```
+
+```{r}
+str(used_cars)
+summary(used_cars)
+skim(used_cars)
+```
+
+
+**QUESTION** Look at the factor variables. What challenges do you think the factor variables might pose when we try to use them in multiple linear regression models?
+
+> The factor variables have different levels which create many different categories for the data set
+
+## Step 4 - Partition into training and test sets
+
+We will use the [caret](https://topepo.github.io/caret/) package to do the partitioning of our data into training and test dataframes. Just run this chunk to create training and test datasets. This way we'll
+all be working with the same datasets. Notice that the test set is 20% of
+the full dataset.
+
+```{r partition}
+# Simple partition into train (80%) and test (20%) set 
+set.seed(447) # Do NOT change this
+trainIndex <- createDataPartition(used_cars$Price, p = .8, 
+                                  list = FALSE, 
+                                  times = 1)
+
+ucars_train <- used_cars[as.vector(trainIndex), ]  
+ucars_test <- used_cars[-as.vector(trainIndex), ]
+
+```
+
+**QUESTION** In our regression notes, we did **NOT** use caret to do the
+partitioning. Instead we did this:
+
+    set.seed(447)
+    testrecs <- sample(nrow(housing), 250)
+    housing_test <- housing[testrecs,]
+    housing_fit <- housing[-testrecs,]  # Negative in front of vector means "not in"
+
+What advantage does using `createDataPartition` have over this simpler approach?
+
+> createDataPartition can be used to create balanced split of the data. for datasets with variables as factors, createDataPartition performs random sampling within each class which should preserve the overrall class distribution of the data.
+
+## Step 5 - EDA on training data
+
+Now we will start with some EDA on the training dataset `ucars_train`. **The test data will only get used after building models and we want to compare their predictive abilities on data that was NOT used to fit the models.**
+
+As mentioned above, the dependent variable that we are trying to predict is
+`Price` You'll notice that `ucars_train` contains a few numeric fields and a few
+factors (categorical data). You are free to use any of these fields in your
+regression models to predict `Price`.
+
+We will start by using things like ggplot2 and dplyr to explore the training dataset.
+You can use other packages as well. Your goal is to gain a general understanding
+of the variables and perhaps uncover some useful relationships that you can
+use in your regression models.
+
+
+Ok, here we go...
+
+### The obvious scatter plot
+
+Anyone who has shopped for used cars knows that the mileage usually affects the price. 
+Create a scatter plot of `Mileage` vs. `Price` (the y-variable).
+
+```{r mileage_vs_price}
+
+```
+
+> DISCUSS THE RESULTS OF THE SCATTER PLOT
+
+### Correlation analysis
+
+Create a correlation matrix and correlation plot which include all of the numeric variables.
+
+```{r corr}
+
+```
+
+
+While this is a common thing to do, you should, in general, **NOT** use it as a screening technique
+to eliminate variables from future consideration for inclusion in a predictive model. 
+
+**QUESTION** Why do you think it could be a bad idea to use correlation analysis to eliminate potential predictor variables? What
+really is the meaning of a simple correlation coefficient? 
+
+> PUT YOUR ANSWER HERE
+
+**QUESTION** Are positive correlation values between `Price` and the various predictor variables suggestive of a potentially more predictive variable than a negative correlation value? In other
+words, would we rather get a correlation value of 0.9 than a value of -0.9?
+
+> PUT YOUR ANSWER HERE
+
+### Some dplyr practice
+
+Use dplyr to find the records with the 10 highest `Price` values. Then look back
+at your scatter plot and comment on these findings.
+
+> PUT YOUR COMMENTARY HERE
+
+```{r dplyr1}
+
+```
+
+Now let's use dplyr to do some group by analysis to explore all of the factor variables. I've given you a code skeleton to get you started.  Obviously you can add more summary stats if you wish. Note, you should also sort the results in descending order by the count. 
+
+> Summarize your findings. Does it seem like some of these factors might have value for predicting `Price`? 
+
+```{r groupby_template}
+# ucars_train %>% 
+#   group_by(???) %>% 
+#   summarize(
+#     n = n(),
+#     mean_price = mean(Price)
+#     sd_price = sd(Price)
+#   ) %>% 
+#   arrange(???)
+  
+```
+
+
+
+Let's do some further exploration of the factor variables using boxplots or violin plots. Create boxplots and violin plots for the `Price` variable using the various factor variables.
+
+Note any challenges faced when trying this for factors with many levels. For example, if the x-axis labels are overlapping, you should flip the boxplot from vertical to horizontal. Of course, feel free to explore more than just these six variables.
+
+**QUESTION** What do the violin plots reveal that the box plots don't?
+
+> PUT YOUR ANSWER HERE
+
+```{r boxplots_violinplots}
+
+
+```
+
+
+## Step 6 - Factor recoding
+
+
+As alluded to earlier in the assignment, you may run into some issues if you try to use some of the raw factor variables in linear regression. I'll let you discover these issues on your own if you choose to use some of the raw factor variables in the modeling part below.
+
+One common approach to dealing with factors that have a large number of levels and have very small counts for some of the levels, is to "lump" some of the factor levels into an "other" category. The **forcats** ("for categories") package has some very useful lumping functions. See https://forcats.tidyverse.org/reference/fct_lump.html.
+
+These can be somewhat tricky to use in that we need to avoid ending up with factor levels in the test data that don't appear in the training data. If this happens, then we won't be able to make regression predictions on the test data as the coefficients corresponding to these levels won't exist. So, it's probably best to do the factor lumping on the complete, unpartitioned, dataset and then resplit. I'll demonstrate this with one of the factor lumping functions that let's us create a new variable in which all levels with n < 10 (or whatever number we choose) are lumped into an "other" category (level). Then I'll use dplyr to a group by `Model_2` and count the number records in each level of the new field. Notice that the newly create "Other" category is not necessarily the one with the least number of records (there is another forcats function that does do this). Then I'll show you how to check to make sure that all levels in the lumped variable in the test set also appear in the train set.
+
+I'm going to do this with the `Model` variable. My new, lumped, version will be named `Model_2`.
+
+
+
+```{r Model_recode_soln}
+# Do the factor lumping on original dataset
+used_cars$Model_2 <- fct_lump_min(used_cars$Model, min=10)
+
+# Check out the results
+used_cars %>% 
+  group_by(Model_2) %>% 
+  summarize(
+    n = n(),
+    mean_charges = mean(Price),
+    median_charges = median(Price),
+    sd_charges = sd(Price)
+  ) %>% 
+  arrange(desc(n))
+```
+
+Notice there are only 4 records in Other. This is good. We've retained a lot of information
+and hopefully will not run into the problem of levels showing up in test that weren't in train.
+
+Now we need to repartition the dataset into train and test.
+
+```{r repartition}
+# Simple partition into train (80%) and test (20%) set 
+set.seed(447) # Do NOT change this
+trainIndex <- createDataPartition(used_cars$Price, p = .8, 
+                                  list = FALSE, 
+                                  times = 1)
+
+ucars_train <- used_cars[as.vector(trainIndex), ]  
+ucars_test <- used_cars[-as.vector(trainIndex), ]
+
+```
+
+As mentioned above, if you are going use any factor variables in your regression models,
+you need to make sure that there are no levels in the test data that are **NOT** in the training data. If there are, when you try to predict using the test data, R will complain that it's seeing a new level that was not in the training data (and thus does not have a corresponding coefficient). This
+SO post is quite helpful - https://stackoverflow.com/questions/12697071/compare-the-levels-of-two-factors. Here's how we
+can compare levels of the `Model_2` factor in both the test and train using the `setdiff` function.
+
+```{r setdiff}
+# In train but not test (not a problem)
+setdiff(levels(ucars_train$Model_2), levels(ucars_test$Model_2))
+
+# In test but not train (this is a problem)
+setdiff(levels(ucars_test$Model_2), levels(ucars_train$Model_2))
+```
+
+Perfect. We have zero records in test that are NOT in train.
+
+Feel free to do any factor lumping that you want.
+
+**HACKER EXTRA** What other lumping function in forcats would you use to create an "Other" field in which it had the lowest number of records across all levels? Try out this function on the `Model` field and see how many records end up in the "Other" category. Does it seem useful with this data?
+
+```{r hacker_extra_1}
+
+```
+
+> HACKER EXTRA DISCUSSION OF RESULTS
+
+
+## Step 7 - Building and evaluation of predictive models
+
+Now that you know a little more about the data, it's time to start building a
+few predictive models for `Price`. 
+
+As our error metric for this modeling exercise, we will use MAE (mean absolute error). We will use the built in MAE function from the MLmetrics package. 
+
+
+### Null model
+
+It's always a good idea to start out with what we call the *null model*. This
+is the simplest possible model and one that other models better be able to 
+beat. For this regression problem, the null model is simply a regression model
+that just has a y-intercept. If you remember some of your statistics, you won't
+be surprised that the best fit value for the y-intercept in this case is 
+the mean of the response variable, `Price` - ``mean(ucars_train$Price)``.
+
+```{r mean_price}
+mean(ucars_train$Price)
+```
+
+
+```{r price_null_model}
+price_lm0 <- lm(Price ~ 1, data = ucars_train)
+summary(price_lm0)
+```
+
+In the next chunk, notice how I compute the null prediction as the overall mean in the training data and then compute the MAE based on that null prediction used against both the training and the test data. You'll see that the mean of `Price` matches the y-intercept in the null regression model above.
+
+
+
+```{r null_model}
+# Compute overall mean Price
+null_pred <- mean(ucars_train$Price)
+sprintf("Null model prediction: %.2f", null_pred)
+
+# Compute null model MAE on train
+null_train_mae <- MAE(ucars_train$Price, null_pred)
+sprintf("Null model train MAE: %.2f", null_train_mae)
+
+# Compute null model MAE on test
+null_test_mae <- MAE(ucars_test$Price, null_pred)
+sprintf("Null model test MAE: %.2f", null_test_mae)
+```
+Soooo, the null model predicts that every car has a price of $21345.87 and
+our mean error is ~ $7600. Not a great model. :)
+
+We should be able to beat the null model.
+
+**QUESTION** The MAE on test is less than the MAE on train. Is this expected or unexpected and why?
+
+
+### Your turn to build models
+
+I'll give you some help building the first model. I'm doing things just like I did in the Rmd files/screencasts from the Modeling 1 session. My basic analysis flow is:
+
+* fit a linear model with `lm` using the training data
+* use `summary()` on the model object to check out the regression results
+* compute the MAE for the fitted model on the training data
+* use the fitted model to make predictions for the test data
+* compute the MAE on the test data predictions
+* do various diagnostic plots or stats that help us understand the model performance
+* rinse and repeat...
+
+
+### Fit a model
+
+Here's a simple model that just uses the `Mileage` variable as a predictor. Note that we are using the training data to fit our models. Later we will test the models predictive abilities on the test data.
+
+```{r lm1}
+price_lm1 <- lm(Price ~ Mileage, data = ucars_train)
+summary(price_lm1)
+```
+
+**QUESTION** How well does `price_lm1` fit and what part of the regression output supports your conclusion? Are the results surprising or not given the scatter plot we looked at earlier? Do you
+think it's worth keeping `Mileage` in our model - why or why not?
+
+> PUT YOUR ANSWER HERE
+
+
+**QUESTION** Does the sign of the coefficient value make sense to you?
+
+> PUT YOUR ANSWER HERE
+
+### Compute MAE for the fitted model on training data
+
+Now let's compute the MAE value for `price_lm1` on the training data. As you've seen in the class notes, I tend to like to "gather up" my results in vectors so that I can quickly scan performance metrics across models. Right now we just have two models, so I'll just include those.
+
+```{r mae_train_1}
+mae_train <- c(MAE(ucars_train$Price, price_lm0$fitted.values),
+                MAE(ucars_train$Price, price_lm1$fitted.values)
+)
+
+mae_train
+```
+**QUESTION** Does the MAE comparison between `price_lm0` and `price_lm1` make sense? Why?
+
+> PUT YOUR ANSWER HERE
+
+### Use fitted model to make predictions on test data
+
+Now let's make predictions on the test data for `lm1`. See regression notes.
+
+```{r lm1_prediction}
+# predict_lm1 <- ???(price_lm1, newdata = ???)
+```
+
+
+**QUESTION** Is `predict_lm1` a vector, a model object, or a dataframe?
+
+> PUT YOUR ANSWER HERE
+
+
+### Compute MAE for the predictions on the test data
+
+Now we can compute the MAE value for `lm1` on the test data. Again, I've included the null model results too.
+
+```{r mae_test_1}
+# mae_test <- c(MAE(ucars_test$Price, null_pred),
+#                 MAE(ucars_test$Price, predict_lm1)
+# )
+# 
+# mae_test
+```
+
+
+### More Model building
+
+Now, it's your turn to create the best linear regression model you can based on this dataset. You can do data transformations or recoding but you CANNOT add any new outside data. 
+
+For each model, fit it using the training data and then make predictions on the test data. Compute MAE for both the fits and predictions for each of your models (just like I did above) 
+
+**QUESTION ** Discuss your results. Which model(s) fit the best and which predicted the best? Were the MAE values higher during the fit stage (i.e. when you used training data) or the prediction stage (i.e. when you used your model fitted on train to make predictions for test)? Does this result make sense? Why or why not? If you had to pick one of your models to use going forward, which would it be and why?
+
+> PUT YOUR DISCUSSION TO ABOVE QUESTION IN AN APPROPRIATE SPOT IN YOUR RMD FILE
+
+```{r start_building_models}
+
+```
+
+Use as many code chunks as you wish and mix in commentary as you go. For example, describe your
+motivation for each of the models you build. Remember, write your commentary in markdown and
+NOT as code comments in chunks (i.e. just mimic the general flow of this document)
+
+
+### Model diagnostics
+
+#### Scatterplots of actual vs fitted values
+
+For your top 3 models, create a scatter plot showing actual vs fitted values
+of `Price`. It's convention to have the X-axis be the actuals and the Y-axis the fitted values. Remember, it's often nice to "gather up" your results
+into a data frame to facilitate plotting. See the notes on comparing competing
+regression models.
+
+```{r scatters_actvpred}
+
+
+```
+
+
+> DISCUSS THE SCATTER PLOTS
+
+#### Constant variance
+
+Make an appropriate plot to check for constant variance (homeskedasticity) for
+your top model. 
+Don't remember what kind of plot to make? See my notes on residual analysis
+or any intro stats book.
+
+```{r constant_variance}
+
+```
+
+
+> DISCUSS THE PLOT
+
+### Your top model
+
+Show your top performing model and discuss whether the model appears to make
+sense in terms of the variables included. Why did you choose the variables you
+did?
+
+It will be interesting to compare the best models that everyone finds.
+
+Later we'll learn more techniques that will likely allow us to beat simple
+linear models.
+
+**HACKER EXTRA 2** We did a simple 80/20 train/test split. Instead, use k-fold cross validation with your training data to compare your models. What is the advantage of this over a simple split? Does
+it lead to a different ranking of your models?
+
+
