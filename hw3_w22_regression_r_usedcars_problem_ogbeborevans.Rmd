@@ -144,7 +144,7 @@ partitioning. Instead we did this:
 
 What advantage does using `createDataPartition` have over this simpler approach?
 
-> createDataPartition can be used to create balanced split of the data. for datasets with variables as factors, createDataPartition performs random sampling within each class which should preserve the overrall class distribution of the data.
+> createDataPartition can be used to create balanced split of the data. for datasets containing variables as factors, createDataPartition performs random sampling within each class, which should allow for preservation of the overrall class distribution of the data.
 
 ## Step 5 - EDA on training data
 
@@ -169,17 +169,20 @@ Anyone who has shopped for used cars knows that the mileage usually affects the 
 Create a scatter plot of `Mileage` vs. `Price` (the y-variable).
 
 ```{r mileage_vs_price}
-
+ggplot(ucars_train) +
+  geom_point(aes(x=Mileage, y=Price))
 ```
 
-> DISCUSS THE RESULTS OF THE SCATTER PLOT
+> The result of the scatter plot shows a negative linear association between Price and Mileage
 
 ### Correlation analysis
 
 Create a correlation matrix and correlation plot which include all of the numeric variables.
 
 ```{r corr}
-
+corrmat <- cor(ucars_train[,c(1:2,7:9)])
+corrmat
+corrplot::corrplot(corrmat, )
 ```
 
 
@@ -189,22 +192,25 @@ to eliminate variables from future consideration for inclusion in a predictive m
 **QUESTION** Why do you think it could be a bad idea to use correlation analysis to eliminate potential predictor variables? What
 really is the meaning of a simple correlation coefficient? 
 
-> PUT YOUR ANSWER HERE
+> Simple correlation coefficient is a value between -1 and 1 that shows the direction and strength of the relationship between two variables. While correlation analysis can provide a summary of the relationship between variables, it can only determine direct relationship. In regression, we are seeking to determine how much the dependent variable changes given a change in the independent variable. i.e. "y" as a function of "x"
 
 **QUESTION** Are positive correlation values between `Price` and the various predictor variables suggestive of a potentially more predictive variable than a negative correlation value? In other
 words, would we rather get a correlation value of 0.9 than a value of -0.9?
 
-> PUT YOUR ANSWER HERE
+> No. A negative correlation value could be as predictive as a positive correlation value
 
 ### Some dplyr practice
 
 Use dplyr to find the records with the 10 highest `Price` values. Then look back
 at your scatter plot and comment on these findings.
 
-> PUT YOUR COMMENTARY HERE
+> The records with the 10 highest 'Price' show a negative linear association between 'Price' and 'Mileage'
 
 ```{r dplyr1}
+ucars_train_price <- ucars_train %>% 
+  arrange(desc(Price))
 
+head(ucars_train_price,10)
 ```
 
 Now let's use dplyr to do some group by analysis to explore all of the factor variables. I've given you a code skeleton to get you started.  Obviously you can add more summary stats if you wish. Note, you should also sort the results in descending order by the count. 
