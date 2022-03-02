@@ -215,7 +215,8 @@ head(ucars_train_price,10)
 
 Now let's use dplyr to do some group by analysis to explore all of the factor variables. I've given you a code skeleton to get you started.  Obviously you can add more summary stats if you wish. Note, you should also sort the results in descending order by the count. 
 
-> Summarize your findings. Does it seem like some of these factors might have value for predicting `Price`? 
+> Summarize your findings. Does it seem like some of these factors might have value for predicting `Price`? From the group by analysis, The SD for 'Model' is relatively low compared to other factors. This is an indication that 'Model' might be a good predictor. Also, Trim produces a similar result as Model. However, the Sedan 4D and Coupe 2D have a high SD which indicates high variation in prices for these 2 trim types.
+
 
 ```{r groupby_template}
 # ucars_train %>% 
@@ -226,27 +227,187 @@ Now let's use dplyr to do some group by analysis to explore all of the factor va
 #     sd_price = sd(Price)
 #   ) %>% 
 #   arrange(???)
-  
 ```
 
 
+```{r groupby_make}
+ucars_train %>%
+  group_by(Make) %>%
+  summarize(
+    n = n(),
+    mean_price = mean(Price),
+    sd_price = sd(Price),
+    p50 = quantile(Price, 0.5),
+    p95 = quantile(Price, 0.95)
+  ) %>%
+  arrange(desc(n))
+
+```
+
+```{r groupby_Model}
+ucars_train %>%
+  group_by(Model) %>%
+  summarize(
+    n = n(),
+    mean_price = mean(Price),
+    sd_price = sd(Price),
+    p50 = quantile(Price, 0.5),
+    p95 = quantile(Price, 0.95)
+  ) %>%
+  arrange(desc(n))
+
+```
+
+```{r groupby_Trim}
+ucars_train %>%
+  group_by(Trim) %>%
+  summarize(
+    n = n(),
+    mean_price = mean(Price),
+    sd_price = sd(Price),
+    p50 = quantile(Price, 0.5),
+    p95 = quantile(Price, 0.95)
+  ) %>%
+  arrange(desc(n))
+
+```
+
+```{r groupby_Type}
+ucars_train %>%
+  group_by(Type) %>%
+  summarize(
+    n = n(),
+    mean_price = mean(Price),
+    sd_price = sd(Price),
+    p50 = quantile(Price, 0.5),
+    p95 = quantile(Price, 0.95)
+  ) %>%
+  arrange(desc(n))
+```
+
+```{r groupby_cruise}
+ucars_train %>%
+  group_by(Cruise) %>%
+  summarize(
+    n = n(),
+    mean_price = mean(Price),
+    sd_price = sd(Price),
+    p50 = quantile(Price, 0.5),
+    p95 = quantile(Price, 0.95)
+  ) %>%
+  arrange(desc(n))
+```
+
+```{r groupby_sound}
+ucars_train %>%
+  group_by(Sound) %>%
+  summarize(
+    n = n(),
+    mean_price = mean(Price),
+    sd_price = sd(Price),
+    p50 = quantile(Price, 0.5),
+    p95 = quantile(Price, 0.95)
+  ) %>%
+  arrange(desc(n))
+```
+
+
+```{r groupby_leather}
+ucars_train %>%
+  group_by(Leather) %>%
+  summarize(
+    n = n(),
+    mean_price = mean(Price),
+    sd_price = sd(Price),
+    p50 = quantile(Price, 0.5),
+    p95 = quantile(Price, 0.95)
+  ) %>%
+  arrange(desc(n))
+```
 
 Let's do some further exploration of the factor variables using boxplots or violin plots. Create boxplots and violin plots for the `Price` variable using the various factor variables.
+
+```{r boxplots_violinplots_Make}
+g <- ggplot(ucars_train)
+
+g +
+  geom_boxplot(aes(x= Make, y= Price))
+
+g +
+  geom_violin(aes(x= Make, y= Price))
+```
+
+```{r boxplots_violinplots_Model}
+g <- ggplot(ucars_train)
+
+g +
+  geom_boxplot(aes(x= Price, y= Model))
+
+g +
+  geom_violin(aes(x= Price, y= Model))
+
+```
+
+```{r boxplots_violinplots_Trim}
+g <- ggplot(ucars_train)
+
+g +
+  geom_boxplot(aes(x= Price, y= Trim))
+
+g +
+  geom_violin(aes(x= Price, y= Trim))
+
+```
+
+```{r boxplots_violinplots_Type}
+g <- ggplot(ucars_train)
+
+g +
+  geom_boxplot(aes(x= Type, y= Price))
+
+g +
+  geom_violin(aes(x= Type, y= Price))
+
+```
+
+```{r boxplots_violinplots_Cruise}
+g <- ggplot(ucars_train)
+
+g +
+  geom_boxplot(aes(x= Cruise, y= Price))
+
+g +
+  geom_violin(aes(x= Cruise, y= Price))
+```
+
+```{r boxplots_violinplots_sound}
+g <- ggplot(ucars_train)
+
+g +
+  geom_boxplot(aes(x= Sound, y= Price))
+
+g +
+  geom_violin(aes(x= Sound, y= Price))
+```
+
+```{r boxplots_violinplots_leather}
+g <- ggplot(ucars_train)
+
+g +
+  geom_boxplot(aes(x= Leather, y= Price))
+
+g +
+  geom_violin(aes(x= Leather, y= Price))
+```
 
 Note any challenges faced when trying this for factors with many levels. For example, if the x-axis labels are overlapping, you should flip the boxplot from vertical to horizontal. Of course, feel free to explore more than just these six variables.
 
 **QUESTION** What do the violin plots reveal that the box plots don't?
 
-> PUT YOUR ANSWER HERE
-
-```{r boxplots_violinplots}
-
-
-```
-
+> Unlike the Boxplots, the violin plots show the distribution of the data. For example, the violin plot for 'Type' shows the 'Hatchback' type as a Bimodal distribution.
 
 ## Step 6 - Factor recoding
-
+ 
 
 As alluded to earlier in the assignment, you may run into some issues if you try to use some of the raw factor variables in linear regression. I'll let you discover these issues on your own if you choose to use some of the raw factor variables in the modeling part below.
 
