@@ -173,7 +173,7 @@ ggplot(ucars_train) +
   geom_point(aes(x=Mileage, y=Price))
 ```
 
-> The result of the scatter plot shows a negative linear association between Price and Mileage
+> The result of the scatter plot shows a slightly negative linear association between Price and Mileage
 
 ### Correlation analysis
 
@@ -204,7 +204,7 @@ words, would we rather get a correlation value of 0.9 than a value of -0.9?
 Use dplyr to find the records with the 10 highest `Price` values. Then look back
 at your scatter plot and comment on these findings.
 
-> The records with the 10 highest 'Price' show a negative linear association between 'Price' and 'Mileage'
+> The records with the 10 highest 'Price' show a negative linear association between 'Price' and 'Mileage'. This is also noticeable in the scatter plot, as depicted by the outliers.
 
 ```{r dplyr1}
 ucars_train_price <- ucars_train %>% 
@@ -407,7 +407,6 @@ Note any challenges faced when trying this for factors with many levels. For exa
 > Unlike the Boxplots, the violin plots show the distribution of the data. For example, the violin plot for 'Type' shows the 'Hatchback' type as a Bimodal distribution.
 
 ## Step 6 - Factor recoding
- 
 
 As alluded to earlier in the assignment, you may run into some issues if you try to use some of the raw factor variables in linear regression. I'll let you discover these issues on your own if you choose to use some of the raw factor variables in the modeling part below.
 
@@ -472,10 +471,21 @@ Feel free to do any factor lumping that you want.
 **HACKER EXTRA** What other lumping function in forcats would you use to create an "Other" field in which it had the lowest number of records across all levels? Try out this function on the `Model` field and see how many records end up in the "Other" category. Does it seem useful with this data?
 
 ```{r hacker_extra_1}
+used_cars$Model_2 <- fct_lump_lowfreq(used_cars$Model, other_level = "Other")
 
+# Check out the results
+used_cars %>% 
+  group_by(Model_2) %>% 
+  summarize(
+    n = n(),
+    mean_charges = mean(Price),
+    median_charges = median(Price),
+    sd_charges = sd(Price)
+  ) %>% 
+  arrange(desc(n))
 ```
 
-> HACKER EXTRA DISCUSSION OF RESULTS
+> fct_lump_lowfreq() can also be used to create an "Other" field with the lowest number of records across all levels. It is useful with this data as 'R' determines the levels that are least frequent. It produces the same value of "4" for the "Other" field as using fct_lump_min() with min = 10
 
 
 ## Step 7 - Building and evaluation of predictive models
@@ -527,7 +537,7 @@ our mean error is ~ $7600. Not a great model. :)
 
 We should be able to beat the null model.
 
-**QUESTION** The MAE on test is less than the MAE on train. Is this expected or unexpected and why?
+**QUESTION** The MAE on test is less than the MAE on train. Is this expected or unexpected and why? It is expected because the mean price for the test is less than that of the train. The MAE test value is dependent on the magnitude and frequency of the price values. Since the partition was unequal and random, the magnitude and frequency of the values in both data sets are unequal, therefore their MAEs from the mean will differ. The test is the lesser set which could result in the MAE being less than the train. 
 
 
 ### Your turn to build models
@@ -552,15 +562,20 @@ price_lm1 <- lm(Price ~ Mileage, data = ucars_train)
 summary(price_lm1)
 ```
 
+```{r}
+plot(price_lm1$residuals, col = "blue")
+```
+
+
 **QUESTION** How well does `price_lm1` fit and what part of the regression output supports your conclusion? Are the results surprising or not given the scatter plot we looked at earlier? Do you
 think it's worth keeping `Mileage` in our model - why or why not?
 
-> PUT YOUR ANSWER HERE
-
+> A low p-value and std error indicate milege as a good predictor for price. The residuals when plotted are slightly random which indicates the linear model provides a decent fit to the data. However, the R-squared value of 0.023 indicates that 2.3% of the variance in Price is explained by the variance in Mileage.
+The results are not entirely surprising. Though the R-Squared value is significantly low, I think it is worth keeping mileage in our model because though the data does not provide a perfect fit, this does not rid it off its ability to predict prices.
 
 **QUESTION** Does the sign of the coefficient value make sense to you?
 
-> PUT YOUR ANSWER HERE
+> Yes it does. It indicates a negative linear association. i.e. for every mile added, the price is reduced by 0.1867
 
 ### Compute MAE for the fitted model on training data
 
@@ -575,20 +590,21 @@ mae_train
 ```
 **QUESTION** Does the MAE comparison between `price_lm0` and `price_lm1` make sense? Why?
 
-> PUT YOUR ANSWER HERE
+> Yes it does. price_lm0 is the null model, which serves as the base model. The MAE for price_lm1 is lower than that of the null model, which makes it a better model than the null model.
 
 ### Use fitted model to make predictions on test data
 
 Now let's make predictions on the test data for `lm1`. See regression notes.
 
 ```{r lm1_prediction}
-# predict_lm1 <- ???(price_lm1, newdata = ???)
+predict_lm1 <- predict(price_lm1, newdata = ucars_test)
+# predict_lm1
 ```
 
 
 **QUESTION** Is `predict_lm1` a vector, a model object, or a dataframe?
 
-> PUT YOUR ANSWER HERE
+> predict_lm1 is a vector
 
 
 ### Compute MAE for the predictions on the test data
@@ -596,11 +612,11 @@ Now let's make predictions on the test data for `lm1`. See regression notes.
 Now we can compute the MAE value for `lm1` on the test data. Again, I've included the null model results too.
 
 ```{r mae_test_1}
-# mae_test <- c(MAE(ucars_test$Price, null_pred),
-#                 MAE(ucars_test$Price, predict_lm1)
-# )
-# 
-# mae_test
+mae_test <- c(MAE(ucars_test$Price, null_pred),
+                MAE(ucars_test$Price, predict_lm1)
+)
+
+mae_test
 ```
 
 
@@ -615,13 +631,55 @@ For each model, fit it using the training data and then make predictions on the 
 > PUT YOUR DISCUSSION TO ABOVE QUESTION IN AN APPROPRIATE SPOT IN YOUR RMD FILE
 
 ```{r start_building_models}
+price_lm2 <- lm(Price ~ Cylinder, data = ucars_train)
+price_lm3 <- lm(Price ~ Liter, data = ucars_train)
+price_lm4 <- lm(Price ~ Doors, data = ucars_train)
 
+summary(price_lm2)
+summary(price_lm3)
+summary(price_lm4)
 ```
+
+
+From the linear models created, the p-values and std errors for price_lm2 and price_lm3 indicate them as better predictors than the other models. Also, both models have better R-Squared values than the others. Which indicate a better fit than the other models
+
+
+```{r MAE_test}
+mae_train <- c(MAE(ucars_train$Price, price_lm0$fitted.values),
+                MAE(ucars_train$Price, price_lm1$fitted.values),
+               MAE(ucars_train$Price, price_lm2$fitted.values),
+               MAE(ucars_train$Price, price_lm3$fitted.values),
+               MAE(ucars_train$Price, price_lm4$fitted.values)
+)
+
+mae_train
+```
+
+With lower MAE values, price_lm2 and price_lm3 performed better than the other models
+
+```{r Predict_with_models}
+predict_lm2 <- predict(price_lm2, newdata = ucars_test)
+predict_lm3 <- predict(price_lm3, newdata = ucars_test)
+predict_lm4 <- predict(price_lm4, newdata = ucars_test)
+```
+
 
 Use as many code chunks as you wish and mix in commentary as you go. For example, describe your
 motivation for each of the models you build. Remember, write your commentary in markdown and
 NOT as code comments in chunks (i.e. just mimic the general flow of this document)
 
+```{r MAE_test}
+mae_test <- c(MAE(ucars_test$Price, null_pred),
+                MAE(ucars_test$Price, predict_lm1),
+              MAE(ucars_test$Price, predict_lm2),
+              MAE(ucars_test$Price, predict_lm3),
+              MAE(ucars_test$Price, predict_lm4)
+)
+
+mae_test
+```
+
+From the MAE test on the predicted models, we can infer that price_lm2 and price_lm3 are better than the other models. This indicates Cylinder and Liter as better predictors of Price than mileage and doors.
 
 ### Model diagnostics
 
