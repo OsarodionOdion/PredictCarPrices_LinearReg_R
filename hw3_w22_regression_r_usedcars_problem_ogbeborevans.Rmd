@@ -631,13 +631,19 @@ For each model, fit it using the training data and then make predictions on the 
 > PUT YOUR DISCUSSION TO ABOVE QUESTION IN AN APPROPRIATE SPOT IN YOUR RMD FILE
 
 ```{r start_building_models}
-price_lm2 <- lm(Price ~ Cylinder, data = ucars_train)
-price_lm3 <- lm(Price ~ Liter, data = ucars_train)
-price_lm4 <- lm(Price ~ Doors, data = ucars_train)
+price_lm2 <- lm(Price ~ Model_2 + Cylinder, data = ucars_train)
+price_lm3 <- lm(Price ~ Model_2 + Mileage * Liter, data = ucars_train)
+price_lm4 <- lm(Price ~ Model_2 + Doors, data = ucars_train)
 
 summary(price_lm2)
 summary(price_lm3)
 summary(price_lm4)
+```
+
+```{r rsqrd_vector}
+rsqrd <- c(summary(price_lm2)$r.squared, summary(price_lm3)$r.squared, summary(price_lm4)$r.squared)
+
+rsqrd
 ```
 
 ```{r anova_aic_bic}
@@ -666,6 +672,7 @@ With lower MAE values, price_lm2 and price_lm3 performed better than the other m
 predict_lm2 <- predict(price_lm2, newdata = ucars_test)
 predict_lm3 <- predict(price_lm3, newdata = ucars_test)
 predict_lm4 <- predict(price_lm4, newdata = ucars_test)
+
 ```
 
 
@@ -723,11 +730,12 @@ Don't remember what kind of plot to make? See my notes on residual analysis
 or any intro stats book.
 
 ```{r constant_variance}
-
+ggplot(data = price_lm3, aes(x = .fitted, y = .resid)) +
+  geom_point(aes(color=Model_2))
 ```
 
 
-> DISCUSS THE PLOT
+> We do not have constant error variance. i.e. heteroskedastic. The errors are higher at higher price values.
 
 ### Your top model
 
