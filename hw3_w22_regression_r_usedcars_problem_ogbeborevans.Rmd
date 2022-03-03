@@ -173,7 +173,7 @@ ggplot(ucars_train) +
   geom_point(aes(x=Mileage, y=Price))
 ```
 
-> The result of the scatter plot shows a slightly negative linear association between Price and Mileage
+> The result of the scatter plot appears random but depicts a slightly negative linear association between Price and Mileage
 
 ### Correlation analysis
 
@@ -204,7 +204,7 @@ words, would we rather get a correlation value of 0.9 than a value of -0.9?
 Use dplyr to find the records with the 10 highest `Price` values. Then look back
 at your scatter plot and comment on these findings.
 
-> The records with the 10 highest 'Price' show a negative linear association between 'Price' and 'Mileage'. This is also noticeable in the scatter plot, as depicted by the outliers.
+> The records with the 10 highest 'Price' show a negative linear association between 'Price' and 'Mileage'. This is slightly noticeable in the scatter plot, more pronounced in the outliers.
 
 ```{r dplyr1}
 ucars_train_price <- ucars_train %>% 
@@ -215,7 +215,7 @@ head(ucars_train_price,10)
 
 Now let's use dplyr to do some group by analysis to explore all of the factor variables. I've given you a code skeleton to get you started.  Obviously you can add more summary stats if you wish. Note, you should also sort the results in descending order by the count. 
 
-> Summarize your findings. Does it seem like some of these factors might have value for predicting `Price`? From the group by analysis, The SD for 'Model' is relatively low compared to other factors. This is an indication that 'Model' might be a good predictor. Also, Trim produces a similar result as Model. However, the Sedan 4D and Coupe 2D have a high SD which indicates high variation in prices for these 2 trim types.
+> Summarize your findings. Does it seem like some of these factors might have value for predicting `Price`? From the group by analysis, The SD for 'Model' is relatively low compared to other factors. This is an indication that 'Model' might be a good fit. Also, Trim produces a similar result as Model. However, the Sedan 4D and Coupe 2D have a high SD which indicates high variation in prices for these 2 trim types.
 
 
 ```{r groupby_template}
@@ -518,7 +518,6 @@ summary(price_lm0)
 In the next chunk, notice how I compute the null prediction as the overall mean in the training data and then compute the MAE based on that null prediction used against both the training and the test data. You'll see that the mean of `Price` matches the y-intercept in the null regression model above.
 
 
-
 ```{r null_model}
 # Compute overall mean Price
 null_pred <- mean(ucars_train$Price)
@@ -537,7 +536,8 @@ our mean error is ~ $7600. Not a great model. :)
 
 We should be able to beat the null model.
 
-**QUESTION** The MAE on test is less than the MAE on train. Is this expected or unexpected and why? It is expected because the mean price for the test is less than that of the train. The MAE test value is dependent on the magnitude and frequency of the price values. Since the partition was unequal and random, the magnitude and frequency of the values in both data sets are unequal, therefore their MAEs from the mean will differ. The test is the lesser set which could result in the MAE being less than the train. 
+**QUESTION** The MAE on test is less than the MAE on train. Is this expected or unexpected and why?
+> It is expected because the mean price for the test is less than that of the train. The MAE test value is dependent on the magnitude and frequency of the price values in the dataset. Since the partition was unequal and random, the magnitude and frequency of the values in both datasets are unequal. Therefore their MAEs from the mean will differ.
 
 
 ### Your turn to build models
@@ -571,7 +571,7 @@ plot(price_lm1$residuals, col = "blue")
 think it's worth keeping `Mileage` in our model - why or why not?
 
 > A low p-value and std error indicate milege as a good predictor for price. The residuals when plotted are slightly random which indicates the linear model provides a decent fit to the data. However, the R-squared value of 0.023 indicates that 2.3% of the variance in Price is explained by the variance in Mileage.
-The results are not entirely surprising. Though the R-Squared value is significantly low, I think it is worth keeping mileage in our model because though the data does not provide a perfect fit, this does not rid it off its ability to predict prices.
+The results are not entirely surprising. Though the R-Squared value is significantly low, which explains the randomness in the scatter plot. I think it is worth keeping mileage in our model because though the data does not provide a good fit, this does not rid it off its ability to predict prices.
 
 **QUESTION** Does the sign of the coefficient value make sense to you?
 
@@ -652,7 +652,7 @@ AIC(price_lm2, price_lm3, price_lm4)
 BIC(price_lm2, price_lm3, price_lm4)
 ```
 
-From the linear models created, the p-values and std errors for price_lm2 and price_lm3 indicate them as better predictors than the other models. Also, both models have better R-Squared values than the others. Which indicate a better fit than the other models
+>From the linear models created, without interaction terms, the p-values and std errors for price_lm2 and price_lm3 showed them as better predictors than the other models. Also, both models had low R-Squared values, but higher than the others. The inclusion of interaction terms improved the models. The R-Squared values and P-values indicate that price_lm3 fits best and predicts best. Comparing the BIC and AIC, price_lm3 had the least, which confirms it as the best model.
 
 
 ```{r MAE_test}
@@ -666,7 +666,7 @@ mae_train <- c(MAE(ucars_train$Price, price_lm0$fitted.values),
 mae_train
 ```
 
-With lower MAE values, price_lm2 and price_lm3 performed better than the other models
+> With the least MAE value, price_lm3 has the least error from the mean price of the train dataset
 
 ```{r Predict_with_models}
 predict_lm2 <- predict(price_lm2, newdata = ucars_test)
@@ -691,7 +691,7 @@ mae_test <- c(MAE(ucars_test$Price, null_pred),
 mae_test
 ```
 
-From the MAE test on the predicted models, we can infer that price_lm2 and price_lm3 are better than the other models. This indicates Cylinder and Liter as better predictors of Price than mileage and doors.
+> From the MAE test on the predicted models, price_lm3 has the least value which ranks it as the best predictor. Note, the MAE values differed for the "train" and "test" data. This is due to variation in the magnitude and frequency of the values in both datasets.
 
 
 ### Model diagnostics
@@ -720,7 +720,7 @@ ggplot(fit_preds, aes(x = act_price, y = lm4_price)) + geom_point() + geom_ablin
 ```
 
 
-> Based on the scatter plots, the 3rd linear model (price_lm3) looks the best. The abline added to the plots provides a reference to measure the performance of each model. The abline for price_lm3 is closest to 45 degrees. 
+> Based on the scatter plots, the 3rd linear model (price_lm3) fits the best. The abline added to the plots provides a reference to measure the performance of each model. From these results, price_lm3 will be my choice going forward.
 
 #### Constant variance
 
@@ -735,13 +735,19 @@ ggplot(data = price_lm3, aes(x = .fitted, y = .resid)) +
 ```
 
 
-> We do not have constant error variance. i.e. heteroskedastic. The errors are higher at higher price values.
+> We do not have constant error variance. The errors are higher at higher price values .i.e. heteroskedastic.
 
 ### Your top model
 
 Show your top performing model and discuss whether the model appears to make
 sense in terms of the variables included. Why did you choose the variables you
 did?
+
+```{r top_model}
+price_lm3
+```
+
+> In terms of variables included, the linear model (price_lm3) depicts that the price of a car can be predicted from the model, mileage and engine size. The EDA (groupby analysis of the various factors) and the results from combining different variables in fitting the data aided my choice of these variables.
 
 It will be interesting to compare the best models that everyone finds.
 
@@ -751,4 +757,35 @@ linear models.
 **HACKER EXTRA 2** We did a simple 80/20 train/test split. Instead, use k-fold cross validation with your training data to compare your models. What is the advantage of this over a simple split? Does
 it lead to a different ranking of your models?
 
+```{r lib_boot}
+library(boot)
+```
+
+```{r refit_glm}
+price_G2 <- glm(Price ~ Model_2 + Cylinder, data = ucars_train)
+price_G3 <- glm(Price ~ Model_2 + Mileage * Liter, data = ucars_train)
+price_G4 <- glm(Price ~ Model_2 + Doors, data = ucars_train)
+```
+
+```{r kcrosses}
+priceCV2 <- cv.glm(ucars_train, price_G2, K=5)
+priceCV3 <- cv.glm(ucars_train, price_G3, K=5)
+priceCV4 <- cv.glm(ucars_train, price_G4, K=5)
+```
+
+```{r gather_results}
+cvResults <- as.data.frame(rbind(priceCV2$delta,
+                                 priceCV3$delta,
+                                 priceCV4$delta))
+
+#Column names
+names(cvResults) <- c("MSE", "MSE.Adjusted")
+
+#Add models to cvResults
+cvResults$Model <- sprintf("price_G%s", 2:4)
+cvResults
+
+```
+
+> The k-fold cross validation does not lead to a different ranking of my models. However, it is more efficient than the train/test split as every partition is used for training and testing
 
