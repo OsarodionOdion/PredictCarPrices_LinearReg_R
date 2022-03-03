@@ -655,7 +655,7 @@ BIC(price_lm2, price_lm3, price_lm4)
 >From the linear models created, without interaction terms, the p-values and std errors for price_lm2 and price_lm3 showed them as better predictors than the other models. Also, both models had low R-Squared values, but higher than the others. The inclusion of interaction terms improved the models. The R-Squared values and P-values indicate that price_lm3 fits best and predicts best. Comparing the BIC and AIC, price_lm3 had the least, which confirms it as the best model.
 
 
-```{r MAE_test}
+```{r MAE_train}
 mae_train <- c(MAE(ucars_train$Price, price_lm0$fitted.values),
                 MAE(ucars_train$Price, price_lm1$fitted.values),
                MAE(ucars_train$Price, price_lm2$fitted.values),
