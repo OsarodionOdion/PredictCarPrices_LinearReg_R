@@ -640,6 +640,11 @@ summary(price_lm3)
 summary(price_lm4)
 ```
 
+```{r anova_aic_bic}
+anova(price_lm2, price_lm3, price_lm4)
+AIC(price_lm2, price_lm3, price_lm4)
+BIC(price_lm2, price_lm3, price_lm4)
+```
 
 From the linear models created, the p-values and std errors for price_lm2 and price_lm3 indicate them as better predictors than the other models. Also, both models have better R-Squared values than the others. Which indicate a better fit than the other models
 
@@ -681,6 +686,7 @@ mae_test
 
 From the MAE test on the predicted models, we can infer that price_lm2 and price_lm3 are better than the other models. This indicates Cylinder and Liter as better predictors of Price than mileage and doors.
 
+
 ### Model diagnostics
 
 #### Scatterplots of actual vs fitted values
@@ -690,13 +696,24 @@ of `Price`. It's convention to have the X-axis be the actuals and the Y-axis the
 into a data frame to facilitate plotting. See the notes on comparing competing
 regression models.
 
-```{r scatters_actvpred}
+```{r gather_fitdata}
+fit_preds <- data.frame(act_price = ucars_test[,"Price"],
+                        lm2_price = predict_lm2,
+                        lm3_price = predict_lm3,
+                        lm4_price = predict_lm4)
 
-
+head(fit_preds)
 ```
 
 
-> DISCUSS THE SCATTER PLOTS
+```{r scatters_actvpred}
+ggplot(fit_preds, aes(x = act_price, y = lm2_price)) + geom_point() + geom_abline()
+ggplot(fit_preds, aes(x = act_price, y = lm3_price)) + geom_point() + geom_abline()
+ggplot(fit_preds, aes(x = act_price, y = lm4_price)) + geom_point() + geom_abline()
+```
+
+
+> Based on the scatter plots, the 3rd linear model (price_lm3) looks the best. The abline added to the plots provides a reference to measure the performance of each model. The abline for price_lm3 is closest to 45 degrees. 
 
 #### Constant variance
 
