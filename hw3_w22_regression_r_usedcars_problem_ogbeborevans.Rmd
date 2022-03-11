@@ -1,6 +1,6 @@
 ---
 title: "HW3-Predictive regression modeling with R"
-author: "misken"
+author: "Osarodion"
 date: "February 8, 2022"
 output:
  html_document: 
